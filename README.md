@@ -4,11 +4,11 @@ This repository contains the finalized **PostgreSQL database schema** for the Da
 
 ## Repository Structure
 
-├── Tables/ # Contains schema definitions for individual tables
-├── Chart Economy.png # Visual chart showing economy-related relationships
-├── DataDigger.png # General database architecture overview
-├── ERDDatabaseChartEconomy.png # Complete ERD for the database
-├── database.dbml # Source schema in DBML format (for tools like dbdiagram.io)
+Tables/ # Contains schema definitions for individual tables
+Chart Economy.png # Visual chart showing economy-related relationships
+DataDigger.png # General database architecture overview
+ERDDatabaseChartEconomy.png # Complete ERD for the database
+database.dbml # Source schema in DBML format (for tools like dbdiagram.io)
 
 
 ## Tech Stack
