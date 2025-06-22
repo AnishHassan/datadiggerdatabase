@@ -1,0 +1,1013 @@
+Table "preferences" {
+  "id" int4 [pk, not null, increment]
+  "theme" varchar(50)
+  "language" varchar(50)
+  "notificationsenabled" bool [default: true]
+  "settings" jsonb
+}
+
+Table "users" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "full_name" varchar(255) [not null]
+  "email" varchar(255) [unique, not null]
+  "password_hash" text [not null]
+  "profile_image" text
+  "is_email_verified" bool [default: false]
+  "auth_provider" varchar(50) [default: 'local']
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "is_active" bool [default: true]
+  "last_login_at" timestamp
+  "failed_login_attempts" int4 [default: 0]
+  "role_id" int4
+  "username" varchar(100) [unique]
+  "preferences_id" int4
+}
+
+Table "user_profiles" {
+  "user_id" uuid [pk, not null]
+  "bio" text
+  "location" varchar(255)
+  "date_of_birth" date
+  "timezone" varchar(50)
+  "language" varchar(50)
+  "profile_picture_url" text
+}
+
+Table "subscriptions" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid [unique]
+  "plan_type" varchar(50)
+  "payment_type" varchar(50)
+  "status" varchar(50)
+  "cost" numeric(10,2)
+  "renewal_date" date
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "user_saved_charts" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid
+  "chart_id" uuid
+  "is_owner" bool [default: false]
+  "saved_at" timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    user_id [type: btree, name: "idx_user_saved_charts_user_id"]
+  }
+}
+
+Table "user_saved_datasets" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid
+  "dataset_id" uuid
+  "is_owner" bool [default: false]
+  "saved_at" timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    user_id [type: btree, name: "idx_user_saved_datasets_user_id"]
+  }
+}
+
+Table "user_saved_posts" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid
+  "post_id" uuid
+  "is_owner" bool [default: false]
+  "saved_at" timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    user_id [type: btree, name: "idx_user_saved_posts_user_id"]
+  }
+}
+
+Table "user_subscribed_events" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid
+  "event_id" uuid
+  "status" varchar(50)
+  "subscribed_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "user_settings" {
+  "user_id" uuid [pk, not null]
+  "is_private" bool [default: false]
+  "email_notifications" bool [default: true]
+  "two_factor_enabled" bool [default: false]
+  "last_password_change" timestamp
+}
+
+Table "user_activity_feed" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid
+  "activity_type" varchar(100)
+  "reference_id" uuid
+  "message" text
+  "status" varchar(30)
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "user_sessions" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "user_id" uuid
+  "refresh_token" text [not null]
+  "user_agent" text
+  "ip_address" text
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "expires_at" timestamp
+}
+
+Table "roles" {
+  "id" int4 [pk, not null, increment]
+  "name" varchar(50) [unique]
+}
+
+Table "user_audit_logs" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "user_id" uuid
+  "action" varchar(100)
+  "metadata" jsonb
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "login_logs" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid
+  "ip_address" inet
+  "user_agent" text
+  "location" text
+  "suspicious" bool [default: false]
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "payment_logs" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid
+  "amount" numeric(10,2)
+  "plan_type" varchar(50)
+  "payment_method" varchar(50)
+  "status" varchar(50)
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "feature_usage" {
+  "id" int4 [pk, not null, increment]
+  "user_id" uuid
+  "feature_name" varchar(100)
+  "metadata" jsonb
+  "usage_count" int4 [default: 1]
+  "last_used" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "post" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "user_id" uuid
+  "title" text
+  "content" text
+  "status" text [default: 'draft']
+  "published_at" timestamp
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "charts" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "title" text
+  "description" text
+  "chart_type" text [not null]
+  "config" jsonb
+  "date_range" tsrange
+  "is_public" bool [default: false]
+  "created_by" uuid
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "chart_saves" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "user_id" uuid
+  "chart_id" uuid
+  "saved_at" timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (user_id, chart_id) [type: btree, name: "chart_saves_user_id_chart_id_key"]
+  }
+}
+
+Table "chart_views" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "chart_id" uuid
+  "viewer_id" uuid
+  "viewed_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "chart_likes" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "chart_id" uuid
+  "user_id" uuid
+  "liked_at" timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (chart_id, user_id) [type: btree, name: "chart_likes_chart_id_user_id_key"]
+  }
+}
+
+Table "datasets" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "title" text
+  "description" text
+  "schema" jsonb
+  "file_url" text
+  "is_public" bool [default: false]
+  "is_admin_created" bool [default: false]
+  "created_by" uuid
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "used_in_charts_count" int4 [default: 0]
+  "version" int4 [default: 1]
+}
+
+Table "dataset_saves" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "user_id" uuid
+  "dataset_id" uuid
+  "saved_at" timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (user_id, dataset_id) [type: btree, name: "dataset_saves_user_id_dataset_id_key"]
+  }
+}
+
+Table "dataset_data_points" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "dataset_id" uuid
+  "x_value" text
+  "y_value" numeric
+  "series_name" text
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "chart_datasets" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "chart_id" uuid
+  "dataset_id" uuid
+  "relationship_type" text [default: 'primary']
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "industries" {
+  "id" int4 [pk, not null, increment]
+  "name" text [unique, not null]
+}
+
+Table "categories" {
+  "id" int4 [pk, not null, increment]
+  "category_name" varchar(255) [not null]
+  "subcategory_name" varchar(255)
+  "subcategory2_name" varchar(255)
+  "parent_id" int4
+  "created_at" timestamptz [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "regions" {
+  "id" int4 [pk, not null, increment]
+  "name" text [unique, not null]
+  "flag_url" text
+}
+
+Table "calendar_events" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "event_date" date [not null]
+  "event_time" time [not null]
+  "event_name" text [not null]
+  "region_id" int4
+  "period" text
+  "survey" numeric
+  "actual" numeric
+  "prior" numeric
+  "revision" numeric
+  "importance" text
+  "category_id" int4
+  "industry_id" int4
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "news_wire" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "news_date" date [not null]
+  "news_time" time [not null]
+  "headline" text [not null]
+  "news_type" text [not null]
+  "source" text [not null]
+  "source_logo" text
+  "region_id" int4
+  "link" text
+  "related_event_id" uuid
+
+  Indexes {
+    (news_date, news_time) [type: btree, name: "idx_news_wire_date_time"]
+  }
+}
+
+Table "calendar_event_history" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "calendar_event_id" uuid
+  "actual" numeric
+  "revision" numeric
+  "recorded_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "news_sources" {
+  "id" int4 [pk, not null, increment]
+  "name" text [unique, not null]
+  "logo_url" text
+}
+
+Table "news_feed" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "publish_date" date [not null]
+  "publish_time" time [not null]
+  "headline" text [not null]
+  "summary" text
+  "link" text
+  "is_trending" bool [default: false]
+  "region_id" int4
+  "source_id" int4
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "newsfeed_categories" {
+  "id" int4 [pk, not null, increment]
+  "name" text [unique, not null]
+}
+
+Table "newsfeed_category_map" {
+  "newsfeed_id" uuid [not null]
+  "category_id" int4 [not null]
+
+  Indexes {
+    (newsfeed_id, category_id) [type: btree, name: "newsfeed_category_map_pkey"]
+  }
+}
+
+Table "news_topics" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "name" text [unique, not null]
+}
+
+Table "newsfeed_topics" {
+  "newsfeed_id" uuid [not null]
+  "topic_id" uuid [not null]
+
+  Indexes {
+    (newsfeed_id, topic_id) [type: btree, name: "newsfeed_topics_pkey"]
+  }
+}
+
+Table "glossary_terms" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "term" text [not null]
+  "definition" text [not null]
+  "short_description" text
+  "level" text
+  "first_letter" bpchar(1)
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "tags" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "name" text [unique, not null]
+}
+
+Table "glossary_term_tags" {
+  "term_id" uuid [not null]
+  "tag_id" uuid [not null]
+
+  Indexes {
+    (term_id, tag_id) [type: btree, name: "glossary_term_tags_pkey"]
+  }
+}
+
+Table "related_terms" {
+  "term_id" uuid [not null]
+  "related_id" uuid [not null]
+
+  Indexes {
+    (term_id, related_id) [type: btree, name: "related_terms_pkey"]
+  }
+}
+
+Table "term_examples" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "term_id" uuid
+  "example" text [not null]
+}
+
+Table "glossary_term_links" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "term_id" uuid
+  "title" text [not null]
+  "url" text [not null]
+}
+
+Table "term_search_index" {
+  "term_id" uuid [pk, not null]
+  "content" text
+  "tsv" tsvector
+
+  Indexes {
+    tsv [type: gin, name: "term_search_tsv_idx"]
+  }
+}
+
+Table "user_preferences" {
+  "id" uuid [pk, not null]
+  "user_id" uuid
+  "theme" text
+  "language" text
+  "brand_color" text
+  "timezone" text
+  "date_range" daterange
+  "notifications_enabled" bool [default: true]
+  "preferences_json" jsonb
+  "created_at" timestamp [default: `now()`]
+}
+
+Table "user_data_filters" {
+  "id" uuid [pk, not null]
+  "preference_id" uuid
+  "region" text
+  "industry" text
+  "category" text
+  "filters_json" jsonb
+  "created_at" timestamp [default: `now()`]
+}
+
+Table "notifications" {
+  "id" uuid [pk, not null]
+  "type" text [not null]
+  "title" text [not null]
+  "message" text
+  "metadata" jsonb
+  "send_to_all" bool [default: false]
+  "created_by" uuid
+  "created_at" timestamp [default: `now()`]
+}
+
+Table "user_notifications" {
+  "id" uuid [pk, not null]
+  "user_id" uuid
+  "notification_id" uuid
+  "is_read" bool [default: false]
+  "is_dismissed" bool [default: false]
+  "notification_enabled" bool [default: true]
+  "delivered_at" timestamp [default: `now()`]
+}
+
+Table "user_saved_presets" {
+  "id" uuid [pk, not null]
+  "user_id" uuid
+  "name" text [not null]
+  "theme" text
+  "language" text
+  "brand_color" text
+  "regions" "text[]"
+  "industries" "text[]"
+  "categories" "text[]"
+  "filters" jsonb
+  "date_range" daterange
+  "timezone" text
+  "created_at" timestamp [default: `now()`]
+}
+
+Table "events" {
+  "id" uuid [pk, not null]
+  "title" text
+  "description" text
+  "region" text
+  "type" text
+  "date_range" daterange
+  "created_at" timestamp [default: `now()`]
+}
+
+Table "user_notification_settings" {
+  "id" uuid [pk, not null]
+  "user_id" uuid
+  "notification_type" text
+  "enabled" bool [default: true]
+}
+
+Table "user_notification_channels" {
+  "id" uuid [pk, not null]
+  "user_id" uuid
+  "channel" text
+  "enabled" bool [default: true]
+}
+
+Table "auction_calendar_events" {
+  "id" int4 [pk, not null, increment]
+  "country_iso2" bpchar(2)
+  "region" varchar(64)
+  "event_date" date
+  "event_time" time
+  "instrument" varchar(64)
+  "event_type" text [default: 'Offer']
+  "title" varchar(255)
+  "impact" varchar(16)
+  "parent_event_id" int4
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "maturity_date" date
+  "category_id" int4
+  "auction_datetime" timestamp
+  "issue_number" varchar(50)
+
+  Indexes {
+    (country_iso2, event_date) [type: btree, name: "idx_auction_country_date"]
+    auction_datetime [type: btree, name: "idx_auction_event_datetime"]
+  }
+}
+
+Table "auction_categories" {
+  "id" int4 [pk, not null, increment]
+  "name" varchar(255) [unique, not null]
+  "created_at" timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table "auction_metrics" {
+  "metric_code" varchar(32) [pk, not null]
+  "description" text [not null]
+  "unit" varchar(16)
+  "preferred_format" varchar(32)
+  "display_order" int4 [default: 0]
+  "created_at" timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table "bond_auction_results" {
+  "id" int4 [pk, not null, increment]
+  "country_iso2" bpchar(2)
+  "auction_date" date
+  "instrument" varchar(64)
+  "maturity_date" date
+  "amount_offered" int8
+  "amount_accepted" int8
+  "bid_to_cover" numeric(5,2)
+  "avg_yield" numeric(6,3)
+  "highest_yield" numeric(6,3)
+  "lowest_yield" numeric(6,3)
+  "auction_event_id" int4
+  "created_at" timestamptz [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "commodity_calendar_events" {
+  "id" int4 [pk, not null, increment]
+  "country_iso2" bpchar(2)
+  "region" varchar(64)
+  "date" date [not null]
+  "time" time
+  "title" varchar(255)
+  "impact" text [default: 'Low']
+  "survey_value" varchar(64)
+  "actual_value" varchar(50)
+  "prior_value" varchar(64)
+  "revision_value" varchar(64)
+  "parent_event_id" int4
+  "created_at" timestamptz [default: `CURRENT_TIMESTAMP`]
+  "unit" varchar(20)
+  "source_url" text
+  "data_provider" varchar(50)
+  "data_type" varchar(50)
+}
+
+Table "countries" {
+  "id" int4 [pk, not null, increment]
+  "country_long_name" varchar(100) [not null]
+  "country_short_name" varchar(100) [not null]
+  "country_iso2" bpchar(2) [unique, not null]
+  "country_iso3" bpchar(3) [unique, not null]
+  "currency_short" bpchar(3)
+  "currency_long" varchar(100)
+  "capital_city" varchar(100)
+  "region" varchar(100)
+  "sub_region" varchar(100)
+  "blocs" jsonb
+  "country_iso_3166_1" int4
+  "cenbank_longname" varchar(150)
+  "cenbank_shortname" varchar(50)
+  "national_flag_path" varchar(255)
+  "state_flag_path" varchar(255)
+  "city_flag_path" varchar(255)
+}
+
+Table "economic_calendar_events" {
+  "id" int4 [pk, not null, increment]
+  "indicator_code" varchar(32)
+  "country_iso2" bpchar(2)
+  "source_shortname" varchar(32)
+  "region" varchar(64)
+  "date" date [not null]
+  "release_for" date
+  "time" time
+  "timezone" varchar(64) [default: 'UTC']
+  "title" varchar(255)
+  "impact" varchar(6) [default: 'Low']
+  "parent_event_id" int4
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "economic_indicator_metadata" {
+  "indicator_code" varchar(64) [pk, not null]
+  "group_code" varchar(64)
+  "country_iso2" bpchar(2) [not null]
+  "source_shortname" varchar(64)
+  "indicator_title" varchar(255)
+  "category" varchar(64)
+  "frequency" varchar(32)
+  "default_release_time" time
+  "default_timezone" varchar(64)
+  "default_impact_level" varchar(16)
+  "unit" varchar(64)
+  "preferred_format" varchar(32)
+  "is_seasonally_adjusted" bool
+  "display_order" int4
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "economic_indicator_values" {
+  "id" int4 [pk, not null, increment]
+  "event_id" int4 [not null]
+  "indicator_code" varchar(64) [not null]
+  "actual_value" numeric(16,4)
+  "unit" varchar(32)
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (event_id, indicator_code) [type: btree, name: "unique_event_metric"]
+  }
+}
+
+Table "holiday_overrides" {
+  "id" int4 [pk, not null, increment]
+  "feed_id" int4 [not null]
+  "release_date" date [not null]
+  "release_time_local" time [default: '13:00:00']
+  "cron_expression" varchar(255)
+  "holiday_name" varchar(255)
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "languages" {
+  "id" int4 [pk, not null, increment]
+  "language_code" bpchar(2) [unique, not null]
+  "language_name" varchar(100) [not null]
+}
+
+Table "news_wires_2" {
+  "id" int4 [pk, not null, increment]
+  "wire_name" varchar(100) [not null]
+  "description" text
+  "wire_group_id" int4
+  "default_rank" int4
+}
+
+Table "wire_groups" {
+  "id" int4 [pk, not null, increment]
+  "wire_group_name" varchar(100) [unique, not null]
+  "description" text
+}
+
+Table "useless_categories" {
+  "id" int4 [pk, not null, increment]
+  "category_name" varchar(100) [not null]
+  "subcategory_name" varchar(255)
+  "subcategory2_name" varchar(255)
+  "parent_id" int4
+}
+
+Table "auction_metric_values" {
+  "id" int4 [pk, not null, increment]
+  "event_id" int4 [not null]
+  "metric_code" varchar(32)
+  "value" numeric(18,6)
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (event_id, metric_code) [type: btree, name: "uq_event_metric"]
+  }
+}
+
+Table "calendar_categories" {
+  "id" int4 [pk, not null, increment]
+  "name" varchar(100) [unique, not null]
+  "parent_id" int4
+  "display_order" int4 [default: 0]
+
+  Indexes {
+    parent_id [type: btree, name: "idx_calendar_categories_parent_id"]
+  }
+}
+
+Table "calendar_event_categories" {
+  "event_id" int4 [not null]
+  "category_id" int4 [not null]
+
+  Indexes {
+    (event_id, category_id) [type: btree, name: "calendar_event_categories_pkey"]
+    category_id [type: btree, name: "idx_calendar_event_categories_category_id"]
+  }
+}
+
+Table "content_table" {
+  "id" int4 [pk, not null, increment]
+  "country_iso2" bpchar(2) [not null]
+  "title" varchar(255) [not null]
+  "description" text
+  "content_url" varchar(2083)
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "category" varchar(255)
+  "subcategory" varchar(255)
+
+  Indexes {
+    country_iso2 [type: btree, name: "idx_content_table_country_iso2"]
+  }
+}
+
+Table "country_subregions" {
+  "id" int4 [pk, not null, increment]
+  "country_iso2" bpchar(2) [not null]
+  "subregion_name" varchar(100) [not null]
+  "subregion_code" varchar(10)
+  "display_order" int4 [default: 0]
+
+  Indexes {
+    country_iso2 [type: btree, name: "idx_country_subregions_country_iso2"]
+  }
+}
+
+Table "derived_categories" {
+  "id" int4 [pk, not null, increment]
+  "main_category_id" int4
+  "derived_category_name" varchar(255)
+
+  Indexes {
+    main_category_id [type: btree, name: "idx_derived_categories_main_category_id"]
+  }
+}
+
+Table "rss_feeds" {
+  "id" int4 [pk, not null, increment]
+  "identifier" varchar(50) [unique, not null]
+  "source_name" varchar(255) [not null]
+  "feed_name" varchar(255) [not null]
+  "feed_url" text [not null]
+  "active" bool [default: true]
+  "last_fetched" timestamp
+  "source_published_at" timestamp
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "source_longname" varchar(255)
+  "source_shortname" varchar(50)
+  "country_short_name" varchar(100)
+  "country_iso2" bpchar(2)
+  "language_code" bpchar(2)
+  "category_id" int4
+  "wire_group_id" int4
+  "tags" varchar(255)
+  "update_method" text [default: 'websocket']
+  "seasonal_winter_only" bool [default: false]
+  "filter_path" varchar(255)
+}
+
+Table "cron_jobs" {
+  "id" int8 [pk, not null, increment]
+  "feed_id" int4 [not null]
+  "feed_identifier" varchar(50) [not null]
+  "country_iso2" bpchar(2)
+  "source_shortname" varchar(50)
+  "cron_expression" text [not null]
+  "timezone" text [not null, default: 'UTC']
+  "active" bool [not null, default: true]
+  "last_run" timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  "notes" text
+  "retry_window_seconds" int4 [not null, default: 0]
+  "retry_interval_seconds" int4 [not null, default: 60]
+  "max_retries" int4
+  "source_priority" varchar(20)
+  "retry_duration_fast_seconds" int4
+  "retry_interval_fast_seconds" int4
+
+  Indexes {
+    active [type: btree, name: "idx_cron_jobs_active"]
+    feed_identifier [type: btree, name: "idx_cron_jobs_active_only"]
+    feed_identifier [type: btree, name: "idx_cron_jobs_feed_identifier"]
+    last_run [type: btree, name: "idx_cron_jobs_last_run"]
+  }
+}
+
+Table "news_articles" {
+  "id" int4 [pk, not null, increment]
+  "feed_id" int4
+  "headline" varchar(500)
+  "summary" text
+  "article_url" varchar(512) [not null]
+  "published_at" timestamptz
+  "source_shortname" varchar(50)
+  "world_rank" int4
+  "country_rank" int4
+  "created_at" timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  "category_id" int4 [not null]
+  "article_url_hash" bpchar(64) [unique, not null, default: '']
+  "delivery_method" text [default: 'cron']
+  "tooltip" text
+  "headline_flash" varchar(10) [default: 'NO']
+
+  Indexes {
+    category_id [type: btree, name: "idx_news_articles_category_id"]
+    feed_id [type: btree, name: "idx_news_articles_feed_id"]
+    published_at [type: btree, name: "idx_news_articles_published_at"]
+  }
+}
+
+Table "rss_feed_categories" {
+  "feed_id" int4 [not null]
+  "category_id" int4 [not null]
+
+  Indexes {
+    (feed_id, category_id) [type: btree, name: "rss_feed_categories_pkey"]
+    category_id [type: btree, name: "idx_rss_feed_categories_category_id"]
+  }
+}
+
+Table "rss_feed_tags" {
+  "feed_id" int4 [not null]
+  "tag_id" uuid [not null]
+
+  Indexes {
+    (feed_id, tag_id) [type: btree, name: "rss_feed_tags_pkey"]
+    tag_id [type: btree, name: "idx_rss_feed_tags_tag_id"]
+  }
+}
+
+Ref "auction_calendar_events_parent_event_id_fkey":"auction_calendar_events"."id" < "auction_calendar_events"."parent_event_id" [delete: set null]
+
+Ref "fk_auction_event":"auction_calendar_events"."id" < "auction_metric_values"."event_id" [delete: cascade]
+
+Ref "fk_metric_code":"auction_metrics"."metric_code" < "auction_metric_values"."metric_code" [delete: cascade]
+
+Ref "bond_auction_results_auction_event_id_fkey":"auction_calendar_events"."id" < "bond_auction_results"."auction_event_id" [delete: set null]
+
+Ref "fk_calendar_categories_parent":"calendar_categories"."id" < "calendar_categories"."parent_id" [delete: cascade]
+
+Ref "fk_category":"calendar_categories"."id" < "calendar_event_categories"."category_id" [delete: cascade]
+
+Ref "fk_event":"economic_calendar_events"."id" < "calendar_event_categories"."event_id" [delete: cascade]
+
+Ref "calendar_event_history_calendar_event_id_fkey":"calendar_events"."id" < "calendar_event_history"."calendar_event_id" [delete: cascade]
+
+Ref "calendar_events_category_id_fkey":"categories"."id" < "calendar_events"."category_id"
+
+Ref "calendar_events_industry_id_fkey":"industries"."id" < "calendar_events"."industry_id"
+
+Ref "calendar_events_region_id_fkey":"regions"."id" < "calendar_events"."region_id"
+
+Ref "categories_parent_id_fkey":"categories"."id" < "categories"."parent_id" [delete: set null]
+
+Ref "chart_datasets_chart_id_fkey":"charts"."id" < "chart_datasets"."chart_id" [delete: cascade]
+
+Ref "chart_datasets_dataset_id_fkey":"datasets"."id" < "chart_datasets"."dataset_id" [delete: cascade]
+
+Ref "chart_likes_chart_id_fkey":"charts"."id" < "chart_likes"."chart_id"
+
+Ref "chart_likes_user_id_fkey":"users"."id" < "chart_likes"."user_id"
+
+Ref "chart_saves_chart_id_fkey":"charts"."id" < "chart_saves"."chart_id" [delete: cascade]
+
+Ref "chart_saves_user_id_fkey":"users"."id" < "chart_saves"."user_id" [delete: cascade]
+
+Ref "chart_views_chart_id_fkey":"charts"."id" < "chart_views"."chart_id"
+
+Ref "chart_views_viewer_id_fkey":"users"."id" < "chart_views"."viewer_id"
+
+Ref "charts_created_by_fkey":"users"."id" < "charts"."created_by"
+
+Ref "commodity_calendar_events_parent_event_id_fkey":"commodity_calendar_events"."id" < "commodity_calendar_events"."parent_event_id" [delete: set null]
+
+Ref "fk_country_iso2":"countries"."country_iso2" < "content_table"."country_iso2" [update: cascade, delete: cascade]
+
+Ref "fk_country_iso2":"countries"."country_iso2" < "country_subregions"."country_iso2" [update: cascade, delete: cascade]
+
+Ref "cron_jobs_country_iso2_fkey":"countries"."country_iso2" < "cron_jobs"."country_iso2" [update: cascade]
+
+Ref "cron_jobs_feed_identifier_fkey":"rss_feeds"."identifier" < "cron_jobs"."feed_identifier" [update: cascade]
+
+Ref "dataset_data_points_dataset_id_fkey":"datasets"."id" < "dataset_data_points"."dataset_id" [delete: cascade]
+
+Ref "dataset_saves_dataset_id_fkey":"datasets"."id" < "dataset_saves"."dataset_id" [delete: cascade]
+
+Ref "dataset_saves_user_id_fkey":"users"."id" < "dataset_saves"."user_id" [delete: cascade]
+
+Ref "datasets_created_by_fkey":"users"."id" < "datasets"."created_by"
+
+Ref "fk_main_category":"useless_categories"."id" < "derived_categories"."main_category_id" [delete: cascade]
+
+Ref "feature_usage_user_id_fkey":"users"."id" < "feature_usage"."user_id" [delete: cascade]
+
+Ref "glossary_term_links_term_id_fkey":"glossary_terms"."id" < "glossary_term_links"."term_id" [delete: cascade]
+
+Ref "glossary_term_tags_tag_id_fkey":"tags"."id" < "glossary_term_tags"."tag_id" [delete: cascade]
+
+Ref "glossary_term_tags_term_id_fkey":"glossary_terms"."id" < "glossary_term_tags"."term_id" [delete: cascade]
+
+Ref "login_logs_user_id_fkey":"users"."id" < "login_logs"."user_id" [delete: cascade]
+
+Ref "news_articles_feed_id_fkey":"rss_feeds"."id" < "news_articles"."feed_id" [update: cascade, delete: cascade]
+
+Ref "news_feed_region_id_fkey":"regions"."id" < "news_feed"."region_id"
+
+Ref "news_feed_source_id_fkey":"news_sources"."id" < "news_feed"."source_id"
+
+Ref "news_wire_region_id_fkey":"regions"."id" < "news_wire"."region_id"
+
+Ref "news_wire_related_event_id_fkey":"calendar_events"."id" < "news_wire"."related_event_id" [delete: set null]
+
+Ref "newsfeed_category_map_category_id_fkey":"newsfeed_categories"."id" < "newsfeed_category_map"."category_id" [delete: cascade]
+
+Ref "newsfeed_category_map_newsfeed_id_fkey":"news_feed"."id" < "newsfeed_category_map"."newsfeed_id" [delete: cascade]
+
+Ref "newsfeed_topics_newsfeed_id_fkey":"news_feed"."id" < "newsfeed_topics"."newsfeed_id" [delete: cascade]
+
+Ref "newsfeed_topics_topic_id_fkey":"news_topics"."id" < "newsfeed_topics"."topic_id" [delete: cascade]
+
+Ref "notifications_created_by_fkey":"users"."id" < "notifications"."created_by"
+
+Ref "payment_logs_user_id_fkey":"users"."id" < "payment_logs"."user_id" [delete: cascade]
+
+Ref "post_user_id_fkey":"users"."id" < "post"."user_id" [delete: cascade]
+
+Ref "related_terms_related_id_fkey":"glossary_terms"."id" < "related_terms"."related_id" [delete: cascade]
+
+Ref "related_terms_term_id_fkey":"glossary_terms"."id" < "related_terms"."term_id" [delete: cascade]
+
+Ref "rss_feed_categories_category_id_fkey":"useless_categories"."id" < "rss_feed_categories"."category_id" [delete: cascade]
+
+Ref "rss_feed_categories_feed_id_fkey":"rss_feeds"."id" < "rss_feed_categories"."feed_id" [delete: cascade]
+
+Ref "rss_feed_tags_feed_id_fkey":"rss_feeds"."id" < "rss_feed_tags"."feed_id" [delete: cascade]
+
+Ref "rss_feed_tags_tag_id_fkey":"tags"."id" < "rss_feed_tags"."tag_id" [delete: cascade]
+
+Ref "fk_category_id":"categories"."id" < "rss_feeds"."category_id" [delete: cascade]
+
+Ref "fk_language_code":"languages"."language_code" < "rss_feeds"."language_code" [delete: set null]
+
+Ref "fk_wire_group":"wire_groups"."id" < "rss_feeds"."wire_group_id" [delete: set null]
+
+Ref "subscriptions_user_id_fkey":"users"."id" < "subscriptions"."user_id" [delete: cascade]
+
+Ref "term_examples_term_id_fkey":"glossary_terms"."id" < "term_examples"."term_id" [delete: cascade]
+
+Ref "term_search_index_term_id_fkey":"glossary_terms"."id" < "term_search_index"."term_id" [delete: cascade]
+
+Ref "fk_useless_categories_parent":"useless_categories"."id" < "useless_categories"."parent_id" [delete: cascade]
+
+Ref "user_activity_feed_user_id_fkey":"users"."id" < "user_activity_feed"."user_id" [delete: cascade]
+
+Ref "user_audit_logs_user_id_fkey":"users"."id" < "user_audit_logs"."user_id" [delete: cascade]
+
+Ref "user_data_filters_preference_id_fkey":"user_preferences"."id" < "user_data_filters"."preference_id" [delete: cascade]
+
+Ref "user_notification_channels_user_id_fkey":"users"."id" < "user_notification_channels"."user_id" [delete: cascade]
+
+Ref "user_notification_settings_user_id_fkey":"users"."id" < "user_notification_settings"."user_id" [delete: cascade]
+
+Ref "user_notifications_notification_id_fkey":"notifications"."id" < "user_notifications"."notification_id" [delete: cascade]
+
+Ref "user_notifications_user_id_fkey":"users"."id" < "user_notifications"."user_id" [delete: cascade]
+
+Ref "user_preferences_user_id_fkey":"users"."id" < "user_preferences"."user_id" [delete: cascade]
+
+Ref "user_profiles_user_id_fkey":"users"."id" < "user_profiles"."user_id" [delete: cascade]
+
+Ref "user_saved_charts_user_id_fkey":"users"."id" < "user_saved_charts"."user_id" [delete: cascade]
+
+Ref "user_saved_datasets_user_id_fkey":"users"."id" < "user_saved_datasets"."user_id" [delete: cascade]
+
+Ref "user_saved_posts_user_id_fkey":"users"."id" < "user_saved_posts"."user_id" [delete: cascade]
+
+Ref "user_saved_presets_user_id_fkey":"users"."id" < "user_saved_presets"."user_id" [delete: cascade]
+
+Ref "user_sessions_user_id_fkey":"users"."id" < "user_sessions"."user_id" [delete: cascade]
+
+Ref "user_settings_user_id_fkey":"users"."id" < "user_settings"."user_id" [delete: cascade]
+
+Ref "user_subscribed_events_user_id_fkey":"users"."id" < "user_subscribed_events"."user_id" [delete: cascade]
+
+Ref "fk_preferences":"preferences"."id" < "users"."preferences_id" [delete: set null]
+
+Ref "users_role_id_fkey":"roles"."id" < "users"."role_id"
