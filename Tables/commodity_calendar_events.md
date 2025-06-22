@@ -1,43 +1,49 @@
 # Table: `commodity_calendar_events`
 
-### Description:
+---
 
-Stores calendar-based economic events related to commodities, including forecasted (survey), actual, prior, and revised values, with metadata like source, provider, and region.
+# Description
+
+Stores calendar-based economic events related to commodities, such as inventories, production reports, and other time-sensitive data. Each record includes metadata (region, source, provider), as well as the forecasted (`survey_value`), actual, prior, and revised values for comparative analysis. Commonly used for visualizing commodity movements, macroeconomic monitoring, and market impact assessments.
 
 ---
 
-## Schema
+# Schema
 
-| Column Name       | Data Type    | Null | Default             | Constraints | Description                                                 |
-| ----------------- | ------------ | ---- | ------------------- | ----------- | ----------------------------------------------------------- |
-| id                | INT4         | NO   | -                   | Primary Key | Unique identifier for the commodity event                   |
-| country_iso2      | BPCHAR(2)    | YES  | -                   | -           | Two-letter ISO country code (e.g., `US`, `CA`)              |
-| region            | VARCHAR(64)  | YES  | -                   | -           | Sub-national region or economic zone                        |
-| date              | DATE         | NO   | -                   | -           | Date of the event                                           |
-| time              | TIME         | YES  | -                   | -           | Time of the event (if specified)                            |
-| title             | VARCHAR(255) | YES  | -                   | -           | Descriptive title of the event                              |
-| impact            | TEXT         | YES  | `'Low'`             | -           | Event impact level (e.g., `High`, `Medium`, `Low`)          |
-| survey_value      | VARCHAR(64)  | YES  | -                   | -           | Forecasted or expected value                                |
-| actual_value      | VARCHAR(50)  | YES  | -                   | -           | Realized or reported value                                  |
-| prior_value       | VARCHAR(64)  | YES  | -                   | -           | Value from the previous period                              |
-| revision_value    | VARCHAR(64)  | YES  | -                   | -           | Revised value from prior release                            |
-| parent_event_id   | INT4         | YES  | -                   | -           | Optional reference to a parent event                        |
-| created_at        | TIMESTAMPTZ  | YES  | `CURRENT_TIMESTAMP` | -           | Timestamp when the event was inserted                       |
-| unit              | VARCHAR(20)  | YES  | -                   | -           | Measurement unit of the values (e.g., barrels, metric tons) |
-| source_url        | TEXT         | YES  | -                   | -           | Link to the official source of the data                     |
-| data_provider     | VARCHAR(50)  | YES  | -                   | -           | Organization or service that provides the data              |
-| data_type         | VARCHAR(50)  | YES  | -                   | -           | Type of data (e.g., `Inventory`, `Production`, etc.)        |
-
-
-## Notes
-
-* `impact` is typically categorized by severity to inform traders or analysts.
-* `survey_value`, `actual_value`, `prior_value`, and `revision_value` help users evaluate how actual outcomes differ from expectations.
-* Useful for visualizing time series of commodity-related metrics like crude oil inventories or agricultural yields.
+| Column Name       | Data Type    | Null | Default             | Constraints | Description                                                    |
+| ----------------- | ------------ | ---- | ------------------- | ----------- | -------------------------------------------------------------- |
+| `id`              | INT4         | NO   | -                   | Primary Key | Unique identifier for the commodity event                      |
+| `country_iso2`    | BPCHAR(2)    | YES  | -                   | -           | ISO 3166-1 alpha-2 country code (e.g., `US`, `CA`)             |
+| `region`          | VARCHAR(64)  | YES  | -                   | -           | Sub-national region or economic zone (e.g., `EIA`)             |
+| `date`            | DATE         | NO   | -                   | -           | Date of the event                                              |
+| `time`            | TIME         | YES  | -                   | -           | Time of the event (24h format, if specified)                   |
+| `title`           | VARCHAR(255) | YES  | -                   | -           | Descriptive title of the event (e.g., `Crude Oil Inventories`) |
+| `impact`          | TEXT         | YES  | `'Low'`             | -           | Event impact level (`High`, `Medium`, `Low`)                   |
+| `survey_value`    | VARCHAR(64)  | YES  | -                   | -           | Forecasted or expected value                                   |
+| `actual_value`    | VARCHAR(50)  | YES  | -                   | -           | Reported value after the event                                 |
+| `prior_value`     | VARCHAR(64)  | YES  | -                   | -           | Value reported in the prior period                             |
+| `revision_value`  | VARCHAR(64)  | YES  | -                   | -           | Revised value from the previously reported figure              |
+| `parent_event_id` | INT4         | YES  | -                   | FK (self)   | Optional link to a parent event (hierarchical structure)       |
+| `created_at`      | TIMESTAMPTZ  | YES  | `CURRENT_TIMESTAMP` | -           | Timestamp when the record was inserted                         |
+| `unit`            | VARCHAR(20)  | YES  | -                   | -           | Unit of measurement (e.g., `barrels`, `tons`)                  |
+| `source_url`      | TEXT         | YES  | -                   | -           | Link to the original data source                               |
+| `data_provider`   | VARCHAR(50)  | YES  | -                   | -           | Data provider (e.g., `EIA`, `USDA`)                            |
+| `data_type`       | VARCHAR(50)  | YES  | -                   | -           | Type of economic data (e.g., `Inventory`, `Production`)        |
 
 ---
 
-## Example Row
+# Relationships
+
+| Relationship                | Type           | Description                                                      |
+| --------------------------- | -------------- | ---------------------------------------------------------------- |
+| `parent_event_id` → `id`    | Self Join      | Optional parent-child link between related events                |
+| May link to `charts.config` | JSON reference | Charts may reference events by `title`, `data_type`, or `region` |
+
+> You can create a `chart_data_sources` linking table to formally associate this data with the `charts` table.
+
+---
+
+# Example Record
 
 ```json
 {
@@ -63,9 +69,19 @@ Stores calendar-based economic events related to commodities, including forecast
 
 ---
 
-## Query Examples
+# Usage Scenarios
 
-**Get all upcoming high-impact commodity events:**
+Market Analysis : Track discrepancies between forecasted and actual commodity data to assess market reactions.
+Data Visualization : Build time series dashboards for crude oil, natural gas, or agricultural reports.
+Impact Assessment : Identify high-impact events for event-driven trading or economic forecasting.
+Revision Tracking : Monitor updates to previously released figures to reassess historical accuracy.
+Data Aggregation : Group events by region, provider, or type for comparative studies across sources.
+
+---
+
+# Query Examples
+
+# 1. Get All Upcoming High-Impact Events
 
 ```sql
 SELECT *
@@ -75,7 +91,9 @@ WHERE impact = 'High'
 ORDER BY date, time;
 ```
 
-**Compare actual vs. survey values for a specific title:**
+---
+
+# 2. Compare Actual vs Survey for Crude Oil Events
 
 ```sql
 SELECT title, date, survey_value, actual_value
@@ -84,7 +102,9 @@ WHERE title ILIKE '%Crude Oil%'
 ORDER BY date DESC;
 ```
 
-**Get revised events for the last 30 days:**
+---
+
+# 3. Revised Events in the Last 30 Days
 
 ```sql
 SELECT *
@@ -95,7 +115,31 @@ WHERE revision_value IS NOT NULL
 
 ---
 
-## Insert Example
+# 4. Aggregated Impact Counts by Type
+
+```sql
+SELECT data_type, impact, COUNT(*) AS event_count
+FROM commodity_calendar_events
+GROUP BY data_type, impact
+ORDER BY data_type, impact;
+```
+
+---
+
+# 5. Time Series of Actual Inventory for a Region
+
+```sql
+SELECT date, actual_value
+FROM commodity_calendar_events
+WHERE data_type = 'Inventory'
+  AND region = 'EIA'
+  AND actual_value IS NOT NULL
+ORDER BY date;
+```
+
+---
+
+# Insert Example
 
 ```sql
 INSERT INTO commodity_calendar_events (

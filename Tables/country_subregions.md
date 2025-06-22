@@ -1,38 +1,45 @@
 # Table: `country_subregions`
 
-### **Description**
+---
 
-Defines named subregions (such as states, provinces, or territories) within a country. Useful for organizing localized data or content below the country level.
+# Description
+
+Defines administrative or geographical subdivisions (e.g., states, provinces, territories) within a country. Enables fine-grained localization for content, filters, data segmentation, or UI displays that go below the country level.
 
 ---
 
-## Schema
+# Schema
 
-| Column Name      | Data Type    | Null | Constraints                                     | Description                                               |
-| ---------------- | ------------ | ---- | ----------------------------------------------- | --------------------------------------------------------- |
-| `id`             | INT4         | NO   | Primary Key, Auto-Increment                     | Unique identifier for the subregion                       |
-| `country_iso2`   | BPCHAR(2)    | NO   | Indexed (`idx_country_subregions_country_iso2`) | ISO Alpha-2 code of the country this subregion belongs to |
-| `subregion_name` | VARCHAR(100) | NO   | -                                               | Name of the subregion (e.g., "California", "Bavaria")     |
-| `subregion_code` | VARCHAR(10)  | YES  | -                                               | Short code or abbreviation (e.g., "CA", "BY")             |
-| `display_order`  | INT4         | YES  | Default: `0`                                    | Optional order value for sorting subregions               |
-
----
-
-## Indexes
-
-| Index Name                            | Columns        | Type  | Description                               |
-| ------------------------------------- | -------------- | ----- | ----------------------------------------- |
-| `idx_country_subregions_country_iso2` | `country_iso2` | BTREE | Optimizes lookup of subregions by country |
+| Column Name      | Data Type    | Null | Constraints                                     | Description                                                      |
+| ---------------- | ------------ | ---- | ----------------------------------------------- | ---------------------------------------------------------------- |
+| `id`             | INT4         | NO   | Primary Key, Auto-Increment                     | Unique identifier for each subregion                             |
+| `country_iso2`   | BPCHAR(2)    | NO   | Indexed (`idx_country_subregions_country_iso2`) | ISO 3166-1 Alpha-2 code of the parent country                    |
+| `subregion_name` | VARCHAR(100) | NO   | -                                               | Name of the subregion (e.g., *California*, *Bavaria*)            |
+| `subregion_code` | VARCHAR(10)  | YES  | -                                               | Abbreviated code or symbol (e.g., *CA*, *BY*)                    |
+| `display_order`  | INT4         | YES  | Default: `0`                                    | Optional integer used for sorting subregions in consistent order |
 
 ---
 
-## Relationships
+# Indexes
 
-* `country_iso2` is expected to match ISO 3166-1 Alpha-2 codes, possibly used in other tables like `content_table`, `languages`, or `economic_indicator_metadata`.
+| Index Name                            | Columns        | Type  | Description                                 |
+| ------------------------------------- | -------------- | ----- | ------------------------------------------- |
+| `idx_country_subregions_country_iso2` | `country_iso2` | BTREE | Accelerates subregion lookups by country ID |
 
 ---
 
-## Example Record
+# Relationships
+
+* `country_iso2` should match ISO codes from the `countries` table.
+* Can be used to associate with:
+
+  * `content_table.country_iso2` for regional content targeting
+  * `languages.country_iso2` for language localization
+  * `economic_indicator_metadata.country_iso2` for deeper breakdowns
+
+---
+
+# Example Record
 
 ```json
 {
@@ -46,17 +53,18 @@ Defines named subregions (such as states, provinces, or territories) within a co
 
 ---
 
-## Usage Scenarios
+# Usage Scenarios
 
-* Displaying localized content or statistics by subregion.
-* Mapping regions within a country in UIs (e.g., dropdowns, filters).
-* Supporting administrative or geographic breakdowns for data.
+* Displaying or filtering content at the subnational level (e.g., news, reports, stats).
+* Organizing UIs such as dropdowns, maps, or autocomplete inputs by region.
+* Supporting geo-targeted delivery for economic, demographic, or policy data.
+* Structuring backend hierarchies for applications that operate regionally.
 
 ---
 
-## Query Examples
+# Query Examples
 
-### List all subregions for a specific country:
+# 1. List all subregions for a specific country:
 
 ```sql
 SELECT subregion_name, subregion_code
@@ -65,11 +73,41 @@ WHERE country_iso2 = 'US'
 ORDER BY display_order ASC;
 ```
 
-### Count number of subregions per country:
+---
+
+# 2. Count number of subregions per country:
 
 ```sql
 SELECT country_iso2, COUNT(*) AS total_subregions
 FROM country_subregions
 GROUP BY country_iso2
 ORDER BY total_subregions DESC;
+```
+
+---
+
+# 3. Get subregion codes for a given region name (partial match):
+
+```sql
+SELECT subregion_code
+FROM country_subregions
+WHERE subregion_name ILIKE '%York%';
+```
+
+---
+
+# Insert Example**
+
+```sql
+INSERT INTO country_subregions (
+  country_iso2,
+  subregion_name,
+  subregion_code,
+  display_order
+) VALUES (
+  'US',
+  'California',
+  'CA',
+  1
+);
 ```
