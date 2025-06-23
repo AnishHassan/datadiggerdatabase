@@ -1,40 +1,52 @@
 # Table: `user_notification_settings`
 
-### Description:
+### **Purpose**
 
-Stores per-user preferences for enabling or disabling different types of notifications.
+Manages **per-user preferences for notification types** (e.g., messages, system alerts, digests), enabling users to control *what* kinds of notifications they want to receive.
 
 ---
 
 ## Schema
 
-| Column Name        | Data Type | Null | Default | Constraints | Description                                             |
-| ------------------ | --------- | ---- | ------- | ----------- | ------------------------------------------------------- |
-| id                 | UUID      | NO   | -       | Primary Key | Unique identifier for the notification setting record   |
-| user_id            | UUID      | YES  | -       | -           | References the user associated with these settings      |
-| notification_type  | TEXT      | YES  | -       | -           | The type/category of notification (e.g. alert, message) |
-| enabled            | BOOLEAN   | YES  | `true`  | -           | Whether this notification type is enabled for the user  |
+| Column Name         | Data Type | Null | Default | Constraints | Description                                               |
+| ------------------- | --------- | ---- | ------- | ----------- | --------------------------------------------------------- |
+| `id`                | UUID      | NO   | —       | Primary Key | Unique identifier for the setting                         |
+| `user_id`           | UUID      | YES  | —       | Foreign Key | User to whom this notification setting applies            |
+| `notification_type` | TEXT      | YES  | —       | —           | Type/category of notification (e.g. `'alert'`, `'promo'`) |
+| `enabled`           | BOOLEAN   | YES  | `true`  | —           | Whether this type of notification is enabled for the user |
 
 ---
 
 ## Notes
 
-* You can add a unique constraint on `(user_id, notification_type)` to prevent duplicate settings for the same type.
-* `notification_type` values should be standardized/enumerated in the application logic or via a lookup table.
-* `enabled = true` implies the user wants to receive this notification type.
+* Recommended to **enforce uniqueness** on `(user_id, notification_type)` to prevent duplicate records.
+* `notification_type` should ideally be **enumerated** via:
+
+  * **application constants**, or
+  * a foreign key to a lookup table like `notification_types(id, name, description)`
+* Use in conjunction with `user_notification_channels` to determine *how* enabled notifications are delivered.
+
+---
+
+## Relationships
+
+| Related Table                   | Foreign Key         | Description                                  |
+| ------------------------------- | ------------------- | -------------------------------------------- |
+| `users`                         | `user_id`           | Identifies which user the setting belongs to |
+| `notification_types` (optional) | `notification_type` | If normalized, provides metadata per type    |
 
 ---
 
 ## Suggested Indexes
 
-| Index Name                            | Columns                        | Type  | Purpose                                 |
-| ------------------------------------- | ------------------------------ | ----- | --------------------------------------- |
-| `user_notification_settings_pkey`     | id                             | BTREE | Primary key                             |
-| `user_notification_settings_uid_type` | (user_id, notification_type)   | BTREE | Prevent duplicate entries; fast lookups |
+| Index Name                            | Columns                          | Type  | Purpose                                 |
+| ------------------------------------- | -------------------------------- | ----- | --------------------------------------- |
+| `user_notification_settings_pkey`     | `id`                             | BTREE | Primary key                             |
+| `user_notification_settings_uid_type` | (`user_id`, `notification_type`) | BTREE | Prevent duplicates and speed up lookups |
 
 ---
 
-## Example Row
+## Example Record
 
 ```json
 {
@@ -47,7 +59,7 @@ Stores per-user preferences for enabling or disabling different types of notific
 
 ---
 
-## Query Example
+## Query Examples
 
 **Enable all notifications for a user:**
 
@@ -57,7 +69,7 @@ SET enabled = true
 WHERE user_id = 'c981b8e3-e34f-44c5-a6a7-1cabe3a7be12';
 ```
 
-**Get disabled notification types for a user:**
+**Get all disabled notification types for a user:**
 
 ```sql
 SELECT notification_type
@@ -66,9 +78,7 @@ WHERE user_id = 'c981b8e3-e34f-44c5-a6a7-1cabe3a7be12'
   AND enabled = false;
 ```
 
----
-
-## Insert Example
+**Add a new setting (e.g., weekly digest):**
 
 ```sql
 INSERT INTO user_notification_settings (id, user_id, notification_type, enabled)
@@ -79,3 +89,16 @@ VALUES (
   true
 );
 ```
+
+---
+
+## Potential Enhancements
+
+| Field        | Type      | Purpose                                                               |
+| ------------ | --------- | --------------------------------------------------------------------- |
+| `frequency`  | TEXT      | Allow user to set delivery rate (e.g. `'immediate'`, `'daily'`, etc.) |
+| `created_at` | TIMESTAMP | Audit trail: when the preference was set                              |
+| `updated_at` | TIMESTAMP | Track when the setting was last modified                              |
+| `source`     | TEXT      | Indicates how the preference was set (e.g., `'web'`, `'admin'`)       |
+
+---

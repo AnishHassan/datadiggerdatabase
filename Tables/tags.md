@@ -1,37 +1,33 @@
 # Table: `tags`
 
-## Description
+### **Description**
 
-Stores unique tag values that can be used to label or categorize various entities (e.g., news articles, events, glossary terms) across the platform. Tags facilitate flexible filtering, grouping, and discoverability.
-
----
-
-## Schema
-
-| Column Name | Data Type | Null | Default             | Constraints | Description                               |
-| ----------- | --------- | ---- | ------------------- | ----------- | ----------------------------------------- |
-| id          | UUID      | NO   | `gen_random_uuid()` | Primary Key | Unique identifier for each tag            |
-| name        | TEXT      | NO   | -                   | Unique      | The label or keyword representing the tag |
+Stores unique tags used to categorize or label various entities (such as news articles, events, or glossary terms) across the platform. Tags improve content discoverability, filtering, and contextual grouping.
 
 ---
 
-## Business Rules
+## **Schema**
 
-* `name` must be unique and is required.
-* Tags can be used across multiple tables/entities via mapping tables (e.g., `entity_tags`, `news_tags`).
-
----
-
-## Indexes
-
-| Index Name      | Column | Type  | Description                               |
-| --------------- | ------ | ----- | ----------------------------------------- |
-| `tags_pkey`     | id     | BTREE | Primary key for unique tag identification |
-| `tags_name_key` | name   | BTREE | Ensures tag names remain unique           |
+| Column Name | Data Type | Null | Constraints                               | Description                                                        |
+| ----------- | --------- | ---- | ----------------------------------------- | ------------------------------------------------------------------ |
+| `id`        | UUID      | NO   | Primary Key, Default: `gen_random_uuid()` | Unique identifier for each tag                                     |
+| `name`      | TEXT      | NO   | Unique                                    | Human-readable tag label or keyword (e.g., `inflation`, `climate`) |
 
 ---
 
-## Example Row
+## **Relationships**
+
+| Related Table | Relationship Type | Description                                                |
+| ------------- | ----------------- | ---------------------------------------------------------- |
+| `entity_tags` | One-to-Many       | Maps tags to various entities (e.g., news, glossary, etc.) |
+| `news_tags`   | One-to-Many       | Links tags to news articles                                |
+| `event_tags`  | One-to-Many       | Associates tags with events                                |
+
+> Tag usage is normalized via mapping tables to support many-to-many relationships with tagged entities.
+
+---
+
+## **Example Record**
 
 ```json
 {
@@ -39,3 +35,50 @@ Stores unique tag values that can be used to label or categorize various entitie
   "name": "inflation"
 }
 ```
+
+---
+
+## **Usage Scenarios**
+
+* Assign tags to content types like news, events, or glossary entries.
+* Enable users to filter or search content based on tags.
+* Group related content items under shared topical labels.
+* Power tag-based recommendations or related-content modules.
+
+---
+
+## **Query Examples**
+
+### Find all tag names (alphabetical):
+
+```sql
+SELECT name
+FROM tags
+ORDER BY name ASC;
+```
+
+### Get tag by name:
+
+```sql
+SELECT *
+FROM tags
+WHERE name = 'climate';
+```
+
+### Count how many tags exist:
+
+```sql
+SELECT COUNT(*) AS total_tags
+FROM tags;
+```
+
+---
+
+## **Insert Example**
+
+```sql
+INSERT INTO tags (name)
+VALUES ('climate');
+```
+
+---

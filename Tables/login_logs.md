@@ -1,53 +1,56 @@
 # Table: `login_logs`
 
-# Description
+---
 
-Tracks every login attempt by users, capturing metadata such as IP address, device info, and location. Flags potentially suspicious login attempts for security monitoring.
+## **Description**
+
+Captures metadata for all user login attempts, enabling session tracking, anomaly detection, and compliance with security auditing standards. Each record includes IP, device fingerprinting, geolocation, and a `suspicious` flag to assist with threat modeling and automated alerts.
 
 ---
 
-# Schema
+## **Schema**
 
-| Column Name | Data Type | Null | Default            | Constraints | Description                                       |
-| ----------- | --------- | ---- | ------------------ | ----------- | ------------------------------------------------- |
-| id          | INT       | NO   | -                  | Primary Key | Unique identifier for the login log entry         |
-| user_id     | UUID      | YES  | NULL               | Foreign Key | References the user attempting to log in          |
-| ip_address  | INET      | YES  | NULL               |             | IP address from which the login was attempted     |
-| user_agent  | TEXT      | YES  | NULL               |             | Device or browser information of the login source |
-| location    | TEXT      | YES  | NULL               |             | Geolocation data derived from the IP address      |
-| suspicious  | BOOL      | NO   | `false`            |             | Indicates if the login is flagged as suspicious   |
-| created_at  | TIMESTAMP | NO   | CURRENT_TIMESTAMP  |             | Timestamp of when the login attempt occurred      |
-
----
-
-# Relationships
-
-| Related Table | Relationship Type | Foreign Key | Description                        |
-| ------------- | ----------------- | ----------- | ---------------------------------- |
-| users         | Many-to-One       | user_id     | A user can have many login entries |
+| Column Name  | Data Type | Null | Default             | Constraints               | Description                                                           |
+| ------------ | --------- | ---- | ------------------- | ------------------------- | --------------------------------------------------------------------- |
+| `id`         | INT       | NO   | –                   | Primary Key               | Unique identifier for each login event                                |
+| `user_id`    | UUID      | YES  | NULL                | Foreign Key → `users(id)` | UUID of the user who attempted the login (nullable for unknown users) |
+| `ip_address` | INET      | YES  | NULL                |                           | IP address from which the login attempt originated                    |
+| `user_agent` | TEXT      | YES  | NULL                |                           | Device and browser details (e.g., user-agent string)                  |
+| `location`   | TEXT      | YES  | NULL                |                           | Human-readable geolocation inferred from `ip_address`                 |
+| `suspicious` | BOOL      | NO   | `false`             |                           | Flag indicating anomaly or risk detected in the login event           |
+| `created_at` | TIMESTAMP | NO   | `CURRENT_TIMESTAMP` |                           | Timestamp of when the login event was logged (UTC)                    |
 
 ---
 
-# Business Rules
+## **Relationships**
 
-* All login attempts should be logged, regardless of success or failure (if applicable).
-* Suspicious logins (e.g. new IPs, geolocation anomalies) should set `suspicious = true`.
-* `ip_address` and `user_agent` help with detecting bot or abuse activity.
-
----
-
-# Indexes
-
-> *(Optional — for performance tuning in production)*
-
-| Index Name                  | Column      | Type  | Description                                 |
-| --------------------------- | ----------- | ----- | ------------------------------------------- |
-| `idx_login_logs_user_id`    | user_id     | BTREE | Speeds up filtering login history by user   |
-| `idx_login_logs_created_at` | created_at  | BTREE | Improves performance for time-based queries |
+| Related Table | Relationship Type | Column    | Description                           |
+| ------------- | ----------------- | --------- | ------------------------------------- |
+| `users`       | Many-to-One       | `user_id` | Links login event to registered users |
 
 ---
 
-# Example Row
+## **Business Rules**
+
+* Every login attempt (successful or failed) **must be logged**.
+* IP geolocation and browser fingerprinting may be used to:
+
+  * Trigger the `suspicious` flag on unfamiliar patterns (e.g., new countries or devices).
+  * Power alerts, 2FA, or login verification flows.
+* Anonymous logins (e.g., failed attempts with invalid user credentials) may have `user_id` as `NULL`.
+
+---
+
+## **Indexes (Performance Considerations)**
+
+| Index Name                  | Column       | Index Type | Use Case                                   |
+| --------------------------- | ------------ | ---------- | ------------------------------------------ |
+| `idx_login_logs_user_id`    | `user_id`    | BTREE      | Retrieve login history for a specific user |
+| `idx_login_logs_created_at` | `created_at` | BTREE      | Analyze login attempts over time           |
+
+---
+
+## **Example Record**
 
 ```json
 {
@@ -59,4 +62,51 @@ Tracks every login attempt by users, capturing metadata such as IP address, devi
   "suspicious": false,
   "created_at": "2025-06-21T09:45:00Z"
 }
+```
+
+---
+
+## **Usage Scenarios**
+
+* **Security Analytics**: Identify brute-force or credential stuffing attempts.
+* **User Support**: Audit login patterns during account recovery or fraud disputes.
+* **Risk Scoring**: Combine `user_agent`, `location`, and `ip_address` for anomaly scoring.
+* **Compliance**: Meet standards for logging user authentication events (e.g., SOC 2, GDPR logging).
+
+---
+
+## **Query Examples**
+
+### Retrieve login history for a specific user:
+
+```sql
+SELECT *
+FROM login_logs
+WHERE user_id = 'f0e8dc59-1b61-4e0c-9c5a-df1c65d28e3c'
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
+---
+
+### Count suspicious logins by IP in the last 24 hours:
+
+```sql
+SELECT ip_address, COUNT(*) AS attempts
+FROM login_logs
+WHERE suspicious = true
+  AND created_at >= NOW() - INTERVAL '1 day'
+GROUP BY ip_address
+ORDER BY attempts DESC;
+```
+
+---
+
+### Find logins from new locations for a user:
+
+```sql
+SELECT DISTINCT location
+FROM login_logs
+WHERE user_id = 'f0e8dc59-1b61-4e0c-9c5a-df1c65d28e3c'
+ORDER BY created_at DESC;
 ```

@@ -1,51 +1,71 @@
 # Table: `user_data_filters`
 
-## Description
+### **Description**
 
-Stores saved data filter configurations tied to a user's preference profile. This allows for persistent filtering criteria across views such as dashboards, feeds, or reports.
+Persists **user-specific filter configurations** for personalized experiences across dashboards, feeds, and reports. Enables **custom views**, **saved queries**, and **preloaded filter states** within an application.
 
 ---
 
-## Schema
+## **Schema Overview**
 
-| Column Name    | Data Type | Null | Default | Constraints | Description                                                             |
-| -------------- | --------- | ---- | ------- | ----------- | ----------------------------------------------------------------------- |
-| id             | UUID      | NO   | -       | Primary Key | Unique identifier for the data filter set                               |
-| preference_id  | UUID      | YES  | -       | Foreign Key | Links to a `user_preferences` record for association                    |
-| region         | TEXT      | YES  | -       |             | Region-based filter (e.g., "North America", "Asia-Pacific")             |
-| industry       | TEXT      | YES  | -       |             | Industry filter (e.g., "Finance", "Healthcare")                         |
-| category       | TEXT      | YES  | -       |             | General category filter (e.g., "News", "Reports")                       |
-| filters_json   | JSONB     | YES  | -       |             | Arbitrary structured filters (e.g., {"source": "WSJ", "score": ">0.8"}) |
-| created_at     | TIMESTAMP | YES  | `now()` |             | Timestamp when the filter configuration was created                     |
+| Column Name     | Data Type | Null | Default | Constraints | Description                                                      |
+| --------------- | --------- | ---- | ------- | ----------- | ---------------------------------------------------------------- |
+| `id`            | UUID      | NO   | —       | Primary Key | Uniquely identifies a saved filter configuration                 |
+| `preference_id` | UUID      | YES  | —       | Foreign Key | Links to `user_preferences` for user-level association           |
+| `region`        | TEXT      | YES  | —       |             | Optional region-specific scope (e.g., "Europe", "Global")        |
+| `industry`      | TEXT      | YES  | —       |             | Optional industry tag (e.g., "Healthcare", "Finance")            |
+| `category`      | TEXT      | YES  | —       |             | Optional category or module (e.g., "News", "Reports")            |
+| `filters_json`  | JSONB     | YES  | —       |             | Nested or dynamic filtering criteria (e.g., `{"score": ">0.9"}`) |
+| `created_at`    | TIMESTAMP | YES  | `now()` |             | Timestamp of creation, defaults to current time                  |
 
 ---
 
 ## Relationships
 
-| Related Table      | Relationship Type | Foreign Key     | Description                                      |
-| ------------------ | ----------------- | --------------- | ------------------------------------------------ |
-| `user_preferences` | Many-to-One       | `preference_id` | Each filter set belongs to one preference record |
+| Related Table      | Relationship Type | Foreign Key     | Description                                                  |
+| ------------------ | ----------------- | --------------- | ------------------------------------------------------------ |
+| `user_preferences` | Many-to-One       | `preference_id` | Each filter set is tied to a user’s saved preference profile |
 
 ---
 
-## Business Rules
+## Business Logic
 
-* Each user preference can be associated with multiple data filter sets.
-* `filters_json` supports complex, nested filtering logic.
-* UI should allow users to save, edit, or delete these filters dynamically.
-
----
-
-## Indexes
-
-| Index Name               | Column         | Type  | Description                                         |
-| ------------------------ | -------------- | ----- | --------------------------------------------------- |
-| `user_data_filters_pkey` | id             | BTREE | Primary key to uniquely identify the filter set     |
-| (optional)               | preference_id  | BTREE | Useful for quick lookup of filters per user profile |
+* A **user** (via `user_preferences`) can **store multiple filter sets** for various use cases.
+* `filters_json` enables flexible, schema-less filter logic suitable for faceted search, advanced filtering, or query caching.
+* Ideal for **saving UI state**, allowing users to return to the same view/filter combo across sessions.
 
 ---
 
-## Example Row
+## Common `filters_json` Examples
+
+```json
+// Example 1: Range + tag-based filtering
+{
+  "score": { "gt": 0.8 },
+  "tags": ["AI", "Startups"],
+  "source": ["Reuters", "Bloomberg"]
+}
+
+// Example 2: Date and source filters
+{
+  "published_after": "2025-01-01",
+  "source": "WSJ"
+}
+```
+
+---
+
+## Index Suggestions
+
+| Index Name                 | Column          | Type  | Description                              |
+| -------------------------- | --------------- | ----- | ---------------------------------------- |
+| `user_data_filters_pkey`   | `id`            | BTREE | Uniquely identifies each filter set      |
+| `idx_data_filters_pref_id` | `preference_id` | BTREE | Optimizes lookup of all filters per user |
+| *(optional)*               | `created_at`    | BTREE | For sorting/filtering filters by recency |
+
+---
+
+## Example Record
 
 ```json
 {
@@ -62,3 +82,32 @@ Stores saved data filter configurations tied to a user's preference profile. Thi
   "created_at": "2025-06-21T11:22:45.000Z"
 }
 ```
+
+---
+
+## Query Examples
+
+**Get all saved filters for a user's preferences:**
+
+```sql
+SELECT * FROM user_data_filters
+WHERE preference_id = 'aa8b92a0-99c7-41c3-9cd3-f5f8130e0e5b'
+ORDER BY created_at DESC;
+```
+
+**Search filters targeting a specific industry and category:**
+
+```sql
+SELECT * FROM user_data_filters
+WHERE industry = 'Finance' AND category = 'Reports';
+```
+
+---
+
+## Notes on Data Security & Usage
+
+* `filters_json` should **not include PII** or security-sensitive data.
+* Design front-end UIs to **validate and sanitize JSON structures** before persisting.
+* Consider **versioning** or **naming filter sets** if filters need to be reused or referenced by name.
+
+---

@@ -2,29 +2,49 @@
 
 ### **Description**
 
-A legacy or deprecated categorization table, possibly retained for compatibility, archival purposes, or temporary mapping logic. Despite its name, it may still serve hierarchical structuring or internal referencing needs.
+A legacy or transitional categorization table that supports hierarchical organization of categories and subcategories. Despite the misleading name, this table may still serve meaningful roles such as fallback classification, backward compatibility, or maintaining referential integrity in migrated systems.
 
 ---
 
-## Schema
+## **Schema**
 
-| Column Name         | Data Type    | Null | Constraints                    | Description                                                 |
-| ------------------- | ------------ | ---- | ------------------------------ | ----------------------------------------------------------- |
-| `id`                | INT4         | NO   | Primary Key, Auto-Increment    | Unique identifier for each (sub)category                    |
-| `category_name`     | VARCHAR(100) | NO   | –                              | Name of the main category                                   |
-| `subcategory_name`  | VARCHAR(255) | YES  | –                              | Optional subcategory label                                  |
-| `subcategory2_name` | VARCHAR(255) | YES  | –                              | Optional secondary subcategory label                        |
-| `parent_id`         | INT4         | YES  | Self-referencing FK (optional) | References another row in the same table as parent category |
-
----
-
-## Hierarchical Relationships
-
-* `parent_id` can reference `id` within the same table to form a **tree structure** of nested categories.
+| Column Name         | Data Type    | Null | Constraints                           | Description                                                   |
+| ------------------- | ------------ | ---- | ------------------------------------- | ------------------------------------------------------------- |
+| `id`                | INT4         | NO   | Primary Key, Auto-Increment           | Unique identifier for each category or subcategory            |
+| `category_name`     | VARCHAR(100) | NO   |                                       | The main or top-level category name                           |
+| `subcategory_name`  | VARCHAR(255) | YES  |                                       | An optional first-level subcategory associated with the entry |
+| `subcategory2_name` | VARCHAR(255) | YES  |                                       | An optional second-level subcategory for finer classification |
+| `parent_id`         | INT4         | YES  | Foreign Key → `useless_categories.id` | Optional reference to a parent category in the same table     |
 
 ---
 
-## Example Record
+## **Relationships**
+
+| Related Table        | Relationship Type | Foreign Key | Description                                      |
+| -------------------- | ----------------- | ----------- | ------------------------------------------------ |
+| `useless_categories` | Self-referencing  | `parent_id` | Allows nesting of categories in a tree structure |
+
+---
+
+## **Business Rules**
+
+* `parent_id` may be `NULL` for top-level (root) categories.
+* Category names must not be empty; they represent a meaningful classification.
+* This table may support multi-level nesting up to any practical depth using recursive queries.
+* Often used during transitional phases of taxonomy refactoring.
+
+---
+
+## **Indexes**
+
+| Index Name                   | Column      | Type  | Description                                    |
+| ---------------------------- | ----------- | ----- | ---------------------------------------------- |
+| `useless_categories_pkey`    | `id`        | BTREE | Primary key for unique category identification |
+| *(optional for performance)* | `parent_id` | BTREE | Speeds up hierarchy traversal operations       |
+
+---
+
+## **Example Record**
 
 ```json
 {
@@ -38,26 +58,46 @@ A legacy or deprecated categorization table, possibly retained for compatibility
 
 ---
 
-## Usage Scenarios
+## **Usage Scenarios**
 
-* Mapping outdated or fallback categories during migration
-* Representing nested category trees or classification logic
-* Supporting legacy filtering logic in archived datasets
+* Retaining mappings to legacy categories during data migration.
+* Building fallback filters or category selectors for outdated UI features.
+* Supporting recursive queries to display multi-tiered classification trees.
+* Auditing historical category usage before decommissioning taxonomy structures.
 
 ---
 
-## Query Examples
+## **Query Examples**
 
-### Get all root categories (no parent):
+### Select all top-level categories:
 
 ```sql
 SELECT * FROM useless_categories
 WHERE parent_id IS NULL;
 ```
 
-### Get all children of a given category:
+### Get direct children of a category (e.g. `id = 42`):
 
 ```sql
 SELECT * FROM useless_categories
 WHERE parent_id = 42;
 ```
+
+### Recursive query to build full category tree:
+
+```sql
+WITH RECURSIVE category_tree AS (
+  SELECT id, category_name, parent_id, 1 AS level
+  FROM useless_categories
+  WHERE parent_id IS NULL
+
+  UNION ALL
+
+  SELECT uc.id, uc.category_name, uc.parent_id, ct.level + 1
+  FROM useless_categories uc
+  JOIN category_tree ct ON uc.parent_id = ct.id
+)
+SELECT * FROM category_tree ORDER BY level, id;
+```
+
+---

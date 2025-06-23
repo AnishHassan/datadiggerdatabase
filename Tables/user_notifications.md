@@ -1,53 +1,54 @@
 # Table: `user_notifications`
 
-## Description
+### **Purpose**
 
-Tracks the delivery and interaction status of notifications for individual users. Used to determine whether a user has received, read, or dismissed a notification.
+Tracks **notification delivery and user interaction** (read/dismissed status) for each user. This enables personalized notification UX, analytics, and delivery tracking.
 
 ---
 
 ## Schema
 
-| Column Name           | Data Type | Null | Default | Constraints | Description                                                 |
-| --------------------- | --------- | ---- | ------- | ----------- | ----------------------------------------------------------- |
-| id                    | UUID      | NO   | -       | Primary Key | Unique identifier for the user-notification record          |
-| user_id               | UUID      | YES  | -       | Foreign Key | ID of the user who receives the notification                |
-| notification_id       | UUID      | YES  | -       | Foreign Key | ID of the related notification                              |
-| is_read               | BOOL      | YES  | `false` |             | Whether the user has marked the notification as read        |
-| is_dismissed          | BOOL      | YES  | `false` |             | Whether the user dismissed (closed or hid) the notification |
-| notification_enabled  | BOOL      | YES  | `true`  |             | Whether this notification is enabled for the user           |
-| delivered_at          | TIMESTAMP | YES  | `now()` |             | Timestamp when the notification was delivered to the user   |
+| Column Name            | Data Type | Null | Default | Constraints | Description                                                   |
+| ---------------------- | --------- | ---- | ------- | ----------- | ------------------------------------------------------------- |
+| `id`                   | UUID      | NO   | —       | Primary Key | Unique record per user-notification pairing                   |
+| `user_id`              | UUID      | YES  | —       | Foreign Key | ID of the user receiving the notification                     |
+| `notification_id`      | UUID      | YES  | —       | Foreign Key | ID of the notification (from `notifications` table)           |
+| `is_read`              | BOOL      | YES  | `false` | —           | Whether the user has read the notification                    |
+| `is_dismissed`         | BOOL      | YES  | `false` | —           | Whether the user dismissed/closed the notification            |
+| `notification_enabled` | BOOL      | YES  | `true`  | —           | Whether this notification was enabled at the time of delivery |
+| `delivered_at`         | TIMESTAMP | YES  | `now()` | —           | When the notification was delivered to the user               |
 
 ---
 
 ## Relationships
 
-| Related Table   | Relationship Type | Foreign Key       | Description                            |
-| --------------- | ----------------- | ----------------- | -------------------------------------- |
-| `users`         | Many-to-One       | `user_id`         | The user who receives the notification |
-| `notifications` | Many-to-One       | `notification_id` | The notification being tracked         |
+| Related Table   | Foreign Key       | Description                       |
+| --------------- | ----------------- | --------------------------------- |
+| `users`         | `user_id`         | Recipient of the notification     |
+| `notifications` | `notification_id` | Notification content and metadata |
 
 ---
 
 ## Business Rules
 
-* A notification will only appear to the user if `notification_enabled = true`.
-* `is_read` and `is_dismissed` are independent flags — a user may dismiss without reading or vice versa.
-* `delivered_at` can be used to measure notification delivery performance or delay.
+* Only display notifications to users if `notification_enabled = true`.
+* `is_read` and `is_dismissed` are **not mutually exclusive** (e.g., a user can read but not dismiss, or vice versa).
+* `delivered_at` can support delivery latency metrics and notification engagement analysis.
 
 ---
 
-## Indexes (Suggested)
+## Suggested Indexes
 
-| Index Name                       | Column(s)                  | Type  | Description                                   |
-| -------------------------------- | -------------------------- | ----- | --------------------------------------------- |
-| `user_notifications_pkey`        | id                         | BTREE | Primary key                                   |
-| `user_notifications_uid_nid_idx` | user_id, notification_id   | BTREE | Fast lookup of user-notification associations |
-| `user_notifications_read_idx`    | user_id, is_read           | BTREE | Filter unread notifications quickly           |
+| Index Name                         | Columns                        | Type  | Use Case                               |
+| ---------------------------------- | ------------------------------ | ----- | -------------------------------------- |
+| `user_notifications_pkey`          | `id`                           | BTREE | Enforces uniqueness                    |
+| `user_notifications_uid_nid_idx`   | (`user_id`, `notification_id`) | BTREE | For deduplication and joins            |
+| `user_notifications_read_idx`      | (`user_id`, `is_read`)         | BTREE | Fetch unread notifications efficiently |
+| `user_notifications_dismissed_idx` | (`user_id`, `is_dismissed`)    | BTREE | Query dismissed notifications quickly  |
 
 ---
 
-## Example Row
+## Example Record
 
 ```json
 {
@@ -60,3 +61,49 @@ Tracks the delivery and interaction status of notifications for individual users
   "delivered_at": "2025-06-21T12:00:00Z"
 }
 ```
+
+---
+
+## Query Examples
+
+**Get unread notifications for a user:**
+
+```sql
+SELECT *
+FROM user_notifications
+WHERE user_id = 'd2e6c932-df99-44b1-83f9-2bcb402fab22'
+  AND is_read = false
+  AND notification_enabled = true;
+```
+
+**Mark notification as read:**
+
+```sql
+UPDATE user_notifications
+SET is_read = true
+WHERE user_id = 'd2e6c932-df99-44b1-83f9-2bcb402fab22'
+  AND notification_id = '4825c814-df13-4050-9086-0f3c4d4b8a12';
+```
+
+**Count dismissed notifications per user:**
+
+```sql
+SELECT COUNT(*)
+FROM user_notifications
+WHERE user_id = 'd2e6c932-df99-44b1-83f9-2bcb402fab22'
+  AND is_dismissed = true;
+```
+
+---
+
+## Optional Enhancements
+
+| Field                | Type      | Description                                                         |
+| -------------------- | --------- | ------------------------------------------------------------------- |
+| `read_at`            | TIMESTAMP | Records exact time the notification was read (audit/tracking)       |
+| `dismissed_at`       | TIMESTAMP | Time when the user dismissed the notification                       |
+| `channel`            | TEXT      | Channel used for delivery (e.g. `'email'`, `'in-app'`, `'sms'`)     |
+| `delivery_status`    | TEXT      | `'delivered'`, `'failed'`, `'pending'` — useful for async channels  |
+| `interaction_source` | TEXT      | E.g. `'web'`, `'mobile'`, `'api'` — how the user interacted with it |
+
+---

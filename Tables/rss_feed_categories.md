@@ -1,33 +1,49 @@
 # Table: `rss_feed_categories`
 
-### **Purpose**
+---
 
-A **junction table** (many-to-many relationship) that links RSS feeds to one or more categories. Each row indicates that a given RSS feed (`feed_id`) is assigned to a specific category (`category_id`).
+## Purpose
+
+`rss_feed_categories` is a **junction table** establishing a **many-to-many relationship** between RSS feeds and categories. It enables assigning multiple categories to a feed and vice versa.
 
 ---
 
 ## Schema
 
-| Column Name   | Data Type | Null | Constraints                            | Description                   |
-| ------------- | --------- | ---- | -------------------------------------- | ----------------------------- |
-| `feed_id`     | INT4      | NO   | Foreign Key → `rss_feeds.id`           | ID of the RSS feed            |
-| `category_id` | INT4      | NO   | Foreign Key → `calendar_categories.id` | ID of the associated category |
+| Column Name   | Data Type | Null | Constraints                            | Description                            |
+| ------------- | --------- | ---- | -------------------------------------- | -------------------------------------- |
+| `feed_id`     | INT4      | NO   | Foreign Key → `rss_feeds.id`           | ID of the RSS feed                     |
+| `category_id` | INT4      | NO   | Foreign Key → `calendar_categories.id` | ID of the associated calendar category |
+
+> 💡 Both fields together form the **composite primary key**.
 
 ---
 
 ## Indexes
 
-| Index Name                            | Columns                    | Description                               |
-| ------------------------------------- | -------------------------- | ----------------------------------------- |
-| `rss_feed_categories_pkey`            | (`feed_id`, `category_id`) | Composite unique key, prevents duplicates |
-| `idx_rss_feed_categories_category_id` | `category_id`              | Optimizes queries filtering by category   |
+| Index Name                            | Columns                    | Purpose                                     |
+| ------------------------------------- | -------------------------- | ------------------------------------------- |
+| `rss_feed_categories_pkey`            | (`feed_id`, `category_id`) | Ensures each pair is unique (no duplicates) |
+| `idx_rss_feed_categories_category_id` | `category_id`              | Optimizes lookups by category               |
 
 ---
 
 ## Relationships
 
-* `feed_id` → `rss_feeds.id`
-* `category_id` → `calendar_categories.id`
+| Column        | References               | Cardinality |
+| ------------- | ------------------------ | ----------- |
+| `feed_id`     | `rss_feeds.id`           | Many-to-One |
+| `category_id` | `calendar_categories.id` | Many-to-One |
+
+> Together, these support a **many-to-many** relationship between `rss_feeds` and `calendar_categories`.
+
+---
+
+## Use Cases
+
+* Group feeds under content themes (e.g., “Politics”, “Tech”).
+* Aggregate feeds for specific content filtering.
+* Support category-based subscription filters or discovery UX.
 
 ---
 
@@ -40,20 +56,13 @@ A **junction table** (many-to-many relationship) that links RSS feeds to one or 
 }
 ```
 
-This means RSS Feed #17 is assigned to Category #3.
-
----
-
-## Usage Scenarios
-
-* A feed can belong to multiple categories (e.g., “Politics” and “World”).
-* A category can contain articles from multiple feeds.
+This means *RSS Feed #17* is associated with *Category #3*.
 
 ---
 
 ## Query Examples
 
-### Get all categories assigned to a specific feed
+### Get all categories for a given feed
 
 ```sql
 SELECT c.id, c.name
@@ -62,7 +71,7 @@ JOIN calendar_categories c ON rfc.category_id = c.id
 WHERE rfc.feed_id = 17;
 ```
 
-### Get all feeds under a specific category
+### Get all feeds for a given category
 
 ```sql
 SELECT f.id, f.feed_name
@@ -71,9 +80,11 @@ JOIN rss_feeds f ON rfc.feed_id = f.id
 WHERE rfc.category_id = 3;
 ```
 
-### Find all feed-category relationships
+### Get all feed-category mappings
 
 ```sql
 SELECT feed_id, category_id
 FROM rss_feed_categories;
 ```
+
+---

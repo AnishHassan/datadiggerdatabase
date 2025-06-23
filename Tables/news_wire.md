@@ -1,56 +1,58 @@
 # Table: `news_wire`
 
+---
+
 ## Description
 
-Stores real-time news entries, typically related to financial markets, economic developments, or relevant events. Each entry includes timestamped metadata, classification, source attribution, and optional linkage to regional and event data.
+Stores real-time news entries relevant to financial markets, economic policy, and global/regional events. Each entry captures precise timestamped metadata, source attribution, topical classification, and optional contextual linking to events and regions.
 
 ---
 
 ## Schema
 
-| Column Name        | Data Type | Null | Default             | Constraints | Description                                                        |
-| ------------------ | --------- | ---- | ------------------- | ----------- | ------------------------------------------------------------------ |
-| id                 | UUID      | NO   | `gen_random_uuid()` | Primary Key | Unique identifier for the news entry                               |
-| news_date          | DATE      | NO   | -                   |             | The calendar date when the news was reported                       |
-| news_time          | TIME      | NO   | -                   |             | The exact time the news was published                              |
-| headline           | TEXT      | NO   | -                   |             | Main headline text of the news                                     |
-| news_type          | TEXT      | NO   | -                   |             | Type or category of the news (e.g., breaking, macro, policy, etc.) |
-| source             | TEXT      | NO   | -                   |             | Source of the news (e.g., Bloomberg, Reuters)                      |
-| source_logo        | TEXT      | YES  | NULL                |             | Optional URL pointing to the logo of the source                    |
-| region_id          | INT       | YES  | NULL                | Foreign Key | Links to a region in the `regions` table                           |
-| link               | TEXT      | YES  | NULL                |             | External link to the full news article                             |
-| related_event_id   | UUID      | YES  | NULL                | Foreign Key | References an event in the `calendar_events` table (if applicable) |
+| Column Name        | Data Type | Null | Default             | Constraints | Description                                                           |
+| ------------------ | --------- | ---- | ------------------- | ----------- | --------------------------------------------------------------------- |
+| `id`               | UUID      | NO   | `gen_random_uuid()` | Primary Key | Unique identifier for the news item                                   |
+| `news_date`        | DATE      | NO   | -                   |             | Calendar date when the news was reported                              |
+| `news_time`        | TIME      | NO   | -                   |             | Exact time (HH\:MM\:SS) of news publication                           |
+| `headline`         | TEXT      | NO   | -                   |             | Main headline or title of the news                                    |
+| `news_type`        | TEXT      | NO   | -                   |             | News category (e.g., `macro`, `policy`, `breaking`)                   |
+| `source`           | TEXT      | NO   | -                   |             | Name of the originating news provider (e.g., Reuters, Bloomberg)      |
+| `source_logo`      | TEXT      | YES  | NULL                |             | Optional logo URL for the news source                                 |
+| `region_id`        | INT       | YES  | NULL                | Foreign Key | Optional reference to a geographic region from the `regions` table    |
+| `link`             | TEXT      | YES  | NULL                |             | Optional external link to the original news source                    |
+| `related_event_id` | UUID      | YES  | NULL                | Foreign Key | Optional link to an economic or calendar event (`calendar_events.id`) |
 
 ---
 
 ## Relationships
 
-| Related Table     | Relationship Type | Foreign Key        | Description                                                  |
-| ----------------- | ----------------- | ------------------ | ------------------------------------------------------------ |
-| `regions`         | Many-to-One       | `region_id`        | Connects news to a geographic region                         |
-| `calendar_events` | Many-to-One       | `related_event_id` | Optionally links a news article to a specific calendar event |
+| Referenced Table  | Foreign Key        | Type        | Description                                             |
+| ----------------- | ------------------ | ----------- | ------------------------------------------------------- |
+| `regions`         | `region_id`        | Many-to-One | Associates news items with a specific geographic region |
+| `calendar_events` | `related_event_id` | Many-to-One | Optionally ties news to an economic or calendar event   |
 
 ---
 
 ## Business Rules
 
-* `headline`, `news_type`, and `source` are required for each record.
-* `news_date` and `news_time` must always be present for accurate chronological ordering.
-* If `related_event_id` is provided, it must reference a valid `calendar_events.id`.
-* `region_id` can help filter or group news geographically.
+* News **must** include a `headline`, `news_type`, `source`, `news_date`, and `news_time`.
+* If `region_id` or `related_event_id` are specified, they must correspond to existing entries.
+* News is typically displayed or filtered in reverse chronological order (latest first).
+* The combination of `news_date` and `news_time` determines the true publication timestamp.
 
 ---
 
 ## Indexes
 
-| Index Name                | Column                   | Type  | Description                                          |
-| ------------------------- | ------------------------ | ----- | ---------------------------------------------------- |
-| `news_wire_pkey`          | id                       | BTREE | Primary key for unique identification                |
-| `idx_news_wire_date_time` | (news_date, news_time)   | BTREE | Could optimize sorting and filtering chronologically |
+| Index Name                | Columns                    | Type  | Description                                   |
+| ------------------------- | -------------------------- | ----- | --------------------------------------------- |
+| `news_wire_pkey`          | `id`                       | BTREE | Ensures uniqueness of each news item          |
+| `idx_news_wire_date_time` | (`news_date`, `news_time`) | BTREE | Optimizes chronological filtering and sorting |
 
 ---
 
-## Example Row
+## Example Record
 
 ```json
 {
@@ -65,4 +67,40 @@ Stores real-time news entries, typically related to financial markets, economic 
   "link": "https://reuters.com/article/ecb-policy-news",
   "related_event_id": "f1a6d8c2-4fdc-4921-a9e4-5a1c9cf251aa"
 }
+```
+
+---
+
+## Usage Scenarios
+
+* **Streaming news feeds** for financial dashboards or trading terminals.
+* **Filtering news** by region, topic, or related economic event.
+* **Attributing stories** clearly with brand logos and publisher links.
+* **Linking** macroeconomic events (e.g., central bank decisions) to real-time coverage.
+
+---
+
+## Query Examples
+
+### 🔹 Latest News
+
+```sql
+SELECT * FROM news_wire
+ORDER BY news_date DESC, news_time DESC
+LIMIT 10;
+```
+
+### 🔹 News for a Specific Region
+
+```sql
+SELECT * FROM news_wire
+WHERE region_id = 3
+ORDER BY news_date DESC, news_time DESC;
+```
+
+### 🔹 News Related to a Calendar Event
+
+```sql
+SELECT * FROM news_wire
+WHERE related_event_id = 'f1a6d8c2-4fdc-4921-a9e4-5a1c9cf251aa';
 ```
