@@ -1,55 +1,61 @@
 # Table: `users`
 
-# Description
-Stores core information about platform users, including authentication credentials, status flags, user preferences, and login metadata. This table is fundamental to authentication, user management, and personalization across the system.
+---
+
+## Description
+
+Stores core information about all registered users, including authentication credentials, profile data, login history, and user status flags.
+It plays a central role in **authentication**, **authorization**, **user management**, and **personalization** across the platform.
 
 ---
 
-# Schema
+## Schema
 
-| Column Name          | Data Type      | Null | Default              | Constraints         | Description                                                 |
-|----------------------|----------------|------|-----------------------|----------------------|-------------------------------------------------------------|
-| id                   | UUID           | NO   | `gen_random_uuid()`   | PRIMARY KEY          | Unique identifier for each user                             |
-| full_name            | VARCHAR(255)   | NO   | -                     |                      | Full name of the user                                       |
-| email                | VARCHAR(255)   | NO   | -                     | UNIQUE               | User's email address, must be unique                        |
-| password_hash        | TEXT           | NO   | -                     |                      | Encrypted password hash                                     |
-| profile_image        | TEXT           | YES  | NULL                  |                      | URL/path to profile image                                   |
-| is_email_verified    | BOOLEAN        | YES  | `false`               |                      | Indicates if email is verified                              |
-| auth_provider        | VARCHAR(50)    | YES  | `'local'`             |                      | Authentication source (e.g. `local`, `google`, `github`)    |
-| created_at           | TIMESTAMP      | NO   | `CURRENT_TIMESTAMP`   |                      | Timestamp of account creation                               |
-| updated_at           | TIMESTAMP      | NO   | `CURRENT_TIMESTAMP`   |                      | Last profile update timestamp                               |
-| is_active            | BOOLEAN        | YES  | `true`                |                      | Whether the account is active                               |
-| last_login_at        | TIMESTAMP      | YES  | NULL                  |                      | Last successful login time                                  |
-| failed_login_attempts| INT4           | YES  | `0`                   |                      | Count of consecutive failed login attempts                  |
-| role_id              | INT4           | YES  | NULL                  | FOREIGN KEY (roles)  | User's role (admin, user, etc.)                             |
-| username             | VARCHAR(100)   | YES  | NULL                  | UNIQUE               | Unique public username                                      |
-| preferences_id       | INT4           | YES  | NULL                  | FOREIGN KEY          | ID linking to user preference settings                      |
-
----
-
-#  Relationships
-
-| Related Table     | Relationship Type | Foreign Key         | Description                                           |
-|-------------------|-------------------|----------------------|-------------------------------------------------------|
-| roles             | Many-to-One       | `role_id`            | Defines user access level or permissions              |
-| preferences       | One-to-One        | `preferences_id`     | Contains user-specific settings and preferences       |
-| user_sessions     | One-to-Many       | `user_id`            | Tracks user login sessions                            |
-| activity_logs     | One-to-Many       | `user_id`            | Logs of user actions across the system                |
+| Column Name             | Data Type    | Null | Default             | Constraints             | Description                                                  |
+| ----------------------  | -----------  | ------------------         | ----------------------- | ------------------------------------------------------------ |
+| `id`                    | UUID         | NO   | `gen_random_uuid()` | PRIMARY KEY             | Unique identifier for each user                              |
+| `full_name`             | VARCHAR(255) | NO   | -                   |                         | User's full name                                             |
+| `email`                 | VARCHAR(255) | NO   | -                   | UNIQUE                  | Email address (used for login and communication)             |
+| `password_hash`         | TEXT         | NO   | -                   |                         | Securely hashed password using bcrypt or similar algorithm   |
+| `profile_image`         | TEXT         | YES  | NULL                |                         | URL or path to user’s profile picture                        |
+| `is_email_verified`     | BOOLEAN      | YES  | `false`             |                         | Indicates whether email has been verified                    |
+| `auth_provider`         | VARCHAR(50)  | YES  | `'local'`           |                         | Source of authentication (`local`, `google`, `github`, etc.) |
+| `created_at`            | TIMESTAMP    | NO   | `CURRENT_TIMESTAMP` |                         | Timestamp of account creation                                |
+| `updated_at`            | TIMESTAMP    | NO   | `CURRENT_TIMESTAMP` |                         | Timestamp of last profile update                             |
+| `is_active`             | BOOLEAN      | YES  | `true`              |                         | Whether the account is currently active                      |
+| `last_login_at`         | TIMESTAMP    | YES  | NULL                |                         | Timestamp of most recent successful login                    |
+| `failed_login_attempts` | INT4         | YES  | `0`                 |                         | Number of consecutive failed login attempts                  |
+| `role_id`               | INT4         | YES  | NULL                | FOREIGN KEY → `roles(id)` | Reference to user's role (admin, user,etc.)                |
+| `username`              | VARCHAR(100) | YES  | NULL                | UNIQUE                  | Public-facing username, unique per user                      |
+| `preferences_id`        | INT4         | YES  | NULL                | FOREIGN KEY → `preferences(id)` | Links to customizable user settings                  |
 
 ---
 
-#  Business Rules
+## Relationships
 
-- Email must be unique and validated upon registration.
-- Passwords must be hashed using a secure algorithm (e.g., bcrypt).
-- `failed_login_attempts` is incremented after each failed login attempt and reset on success.
-- Inactive users (`is_active = false`) are not allowed to log in.
-- `username` is used for display or public routes and must be unique.
-- Soft deletes can be implemented by toggling `is_active`.
+| Related Table            | Type        | Foreign Key      | Description                                              |
+| ------------------------ | ----------- | ---------------- | -------------------------------------------------------- |
+| `roles`                  | Many-to-One | `role_id`        | Defines the access level or permission group of the user |
+| `preferences`            | One-to-One  | `preferences_id` | User's personal preferences (e.g., theme, notifications) |
+| `user_sessions`          | One-to-Many | `user_id`        | Tracks login history and active sessions                 |
+| `activity_logs`          | One-to-Many | `user_id`        | Records of user interactions across the system           |
+| `user_subscribed_events` | One-to-Many | `user_id`        | Tracks which events a user has subscribed to             |
 
 ---
 
-# Example Row
+## Business Rules
+
+* Email must be unique and is used as the primary login credential.
+* Passwords are always hashed using a secure algorithm like **bcrypt** before storage.
+* `is_active = false` disables the account without permanent deletion (soft delete).
+* `failed_login_attempts` is incremented on failure and reset on successful login.
+* `username`, if provided, must be globally unique and is used in public URLs/routes.
+* OAuth/social logins (Google, GitHub) populate `auth_provider` and bypass password.
+* Deactivation or deletion should cascade or clean up sessions and activity logs.
+
+---
+
+## Example Record
 
 ```json
 {
@@ -69,3 +75,101 @@ Stores core information about platform users, including authentication credentia
   "username": "anishhassan",
   "preferences_id": 11
 }
+```
+
+---
+
+## Usage Scenarios
+
+* User authentication and login via password or OAuth.
+* Displaying public profile information (e.g., name, username, profile picture).
+* Role-based access control (admin vs user).
+* Tracking last login and account health (failed logins).
+* Personalizing UI based on user preferences.
+* Deactivating or blocking users for violations.
+
+---
+
+## Query Examples
+
+### 1. Get a user by email (login):
+
+```sql
+SELECT * FROM users WHERE email = 'anish@example.com';
+```
+
+---
+
+### 2. Get active users with verified email:
+
+```sql
+SELECT id, full_name, email
+FROM users
+WHERE is_active = true AND is_email_verified = true;
+```
+
+---
+
+### 3. Increment failed login attempts:
+
+```sql
+UPDATE users
+SET failed_login_attempts = failed_login_attempts + 1
+WHERE email = 'anish@example.com';
+```
+
+---
+
+### 4. Reset failed attempts & set last login time:
+
+```sql
+UPDATE users
+SET failed_login_attempts = 0,
+    last_login_at = CURRENT_TIMESTAMP
+WHERE id = '7f1d5f1a-231d-437c-91a0-3a7de48cb85f';
+```
+
+---
+
+### 5. Fetch user with role info:
+
+```sql
+SELECT u.id, u.full_name, r.name AS role_name
+FROM users u
+JOIN roles r ON r.id = u.role_id
+WHERE u.id = '7f1d5f1a-231d-437c-91a0-3a7de48cb85f';
+```
+
+---
+
+## Insert Example
+
+```sql
+INSERT INTO users (
+  full_name, email, password_hash, profile_image,
+  is_email_verified, auth_provider, username, role_id, preferences_id
+) VALUES (
+  'Anish Hassan',
+  'anish@example.com',
+  '$2b$12$6aLxfSAbcdEFGhIJkLMNoOpQrsTUvwxyzABcDEfgh',
+  'https://cdn.example.com/profiles/anish.jpg',
+  true,
+  'local',
+  'anishhassan',
+  2,
+  11
+);
+```
+
+---
+
+## Suggested Indexes
+
+| Index Name            | Column      | Purpose                            |
+| --------------------- | ----------- | ---------------------------------- |
+| `idx_users_email`     | `email`     | Fast lookup during login           |
+| `idx_users_username`  | `username`  | Support unique user profile URLs   |
+| `idx_users_role_id`   | `role_id`   | Optimize role-based queries        |
+| `idx_users_is_active` | `is_active` | Quickly find active/inactive users |
+
+---

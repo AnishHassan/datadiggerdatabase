@@ -2,27 +2,37 @@
 
 ### **Description**
 
-Represents logical groupings of news wires, allowing for organization, filtering, and categorization of related news sources within the system.
+The `wire_groups` table defines logical groupings of news wires. These groups enable better organization, filtering, and classification of news sources across the platform, especially in admin interfaces and user-facing filters.
 
 ---
 
-## Schema
+## **Schema**
 
-| Column Name       | Data Type    | Null | Constraints                 | Description                                        |
-| ----------------- | ------------ | ---- | --------------------------- | -------------------------------------------------- |
-| `id`              | INT4         | NO   | Primary Key, Auto-Increment | Unique identifier for each wire group              |
-| `wire_group_name` | VARCHAR(100) | NO   | Unique                      | Name of the group (e.g., `'Top Financial Feeds'`)  |
-| `description`     | TEXT         | YES  | –                           | Optional description providing details about group |
-
----
-
-## Relationships
-
-* Referenced by: `news_wires_2.wire_group_id → wire_groups.id`
+| Column Name       | Data Type    | Nullable | Constraints                 | Description                                                           |
+| ----------------- | ------------ | -------- | --------------------------- | --------------------------------------------------------------------- |
+| `id`              | INT4         | NO       | Primary Key, Auto-Increment | Unique identifier for each wire group                                 |
+| `wire_group_name` | VARCHAR(100) | NO       | UNIQUE                      | Descriptive, unique name of the group (e.g., `"Top Financial Feeds"`) |
+| `description`     | TEXT         | YES      | –                           | Optional detailed description of the wire group’s purpose             |
 
 ---
 
-## Example Record
+## **Relationships**
+
+| Related Table  | Relationship Type | Foreign Key          | Description                                             |
+| -------------- | ----------------- | -------------------- | ------------------------------------------------------- |
+| `news_wires_2` | Many-to-One       | `wire_group_id → id` | Each news wire belongs to one group via `wire_group_id` |
+
+---
+
+## **Business Use Cases**
+
+* **Categorization**: Organize similar news wires under thematic groups (e.g., Finance, Politics, Global Markets).
+* **Filtering**: Power admin UI filters or user-facing options to view specific types of content.
+* **Group-level Policies**: Apply visibility rules or configurations at the group level instead of wire-by-wire.
+
+---
+
+## **Example Record**
 
 ```json
 {
@@ -34,17 +44,9 @@ Represents logical groupings of news wires, allowing for organization, filtering
 
 ---
 
-## Usage Scenarios
+## **Sample Queries**
 
-* Categorizing related news wires into named groups
-* Simplifying filtering or selection in admin dashboards
-* Applying group-level policies or visibility settings
-
----
-
-## Query Examples
-
-### List all wire groups:
+### 1. List all wire groups alphabetically:
 
 ```sql
 SELECT id, wire_group_name, description
@@ -52,7 +54,7 @@ FROM wire_groups
 ORDER BY wire_group_name;
 ```
 
-### Find a group by partial name:
+### 2. Search for wire groups containing a keyword:
 
 ```sql
 SELECT *
